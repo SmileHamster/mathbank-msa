@@ -1,0 +1,16 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: attempt-service
+  datasource:
+    url: ${DB_URL:jdbc:mariadb://localhost:3306/mathbank_attempt}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.mathbank.attempt.domain
+  configuration:
+    map-underscore-to-camel-case: true
