@@ -1,29 +1,30 @@
 # mathbank-msa
 
-수학 문제은행(mathbank, [1호 프로젝트](https://github.com/SmileHamster/mathbank))을 MSA 구조로 재구성하는 2호 포트폴리오 프로젝트입니다.
-도메인·태그 체계 등 기존 지식은 그대로 가져오되, 서비스를 4개로 쪼개고 그 사이의 통신·인증·배포를 어떻게 다루는지에 초점을 맞춥니다.
+mathbank 1호(모놀리식)를 MSA로 전환한 2호 프로젝트입니다.
+Spring Cloud Gateway + Docker Compose 기반으로 구성합니다.
 
 **현재 상태**: 스켈레톤만 존재. 아직 실제 코드 없음.
 
+## 서비스 구성
+
+| 서비스 | 역할 | 포트 |
+|---|---|---|
+| gateway | API Gateway, JWT 인증, 라우팅 | 8080 |
+| auth-service | 회원 인증 | 8081 |
+| problem-service | 문제·태그 관리 | 8082 |
+| examsheet-service | 시험지 자동 생성 | 8083 |
+| attempt-service | 학생·응시·통계 | 8084 |
+
+## 관련 프로젝트
+
+- 1호 모놀리식: https://github.com/SmileHamster/mathbank
+
 ---
 
-## 구조 (모노레포)
-
-```
-mathbank-msa/
-├── services/
-│   ├── auth-service/       회원 인증 (mathbank의 auth 패키지에서 분리)
-│   ├── problem-service/    문제·태그 (mathbank의 problem 패키지에서 분리)
-│   ├── examsheet-service/  시험지 생성·PDF (mathbank의 examsheet 패키지에서 분리)
-│   └── attempt-service/    학생·응시·통계 (mathbank의 attempt 패키지에서 분리)
-├── gateway/                 Spring Cloud Gateway (라우팅 + JWT 인증)
-└── docker-compose.yml        (4단계에서 추가 예정)
-```
+## 왜 모노레포인가
 
 서비스마다 별도 GitHub 저장소로 나누는 멀티레포 대신, 하나의 저장소에서 폴더로 관리하는 모노레포 방식을 선택했습니다.
 혼자 개발하고 Docker Compose로 한 VM에 같이 배포할 규모라, 여러 저장소를 오가며 버전을 맞추는 오버헤드가 이득보다 크다고 판단했습니다.
-
----
 
 ## 로드맵
 
@@ -37,9 +38,3 @@ mathbank-msa/
 - [ ] 8단계: Kubernetes 검토
 
 > 6~8단계는 실제로 필요성이 확인될 때만 진행 — 처음부터 K8s까지 다 하는 게 목표가 아니라, 각 단계에서 왜 다음 도구가 필요해지는지 스스로 판단하는 과정 자체가 포인트.
-
----
-
-## 1호 프로젝트와의 관계
-
-이 저장소는 mathbank와 **별개의 git 저장소**입니다. 도메인 지식(6축 태그 체계, 시험지 생성 알고리즘 등)과 기술적 의사결정 기록은 [mathbank의 PLANNING.md/README](https://github.com/SmileHamster/mathbank)를 참고하세요. 코드를 그대로 복사하기보다, 서비스 경계에 맞게 다시 설계하며 가져올 예정입니다.

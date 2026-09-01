@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  gateway:
+    # TODO: Week 1에서 구현
+
+  auth-service:
+    # TODO
+
+  problem-service:
+    # TODO
+
+  examsheet-service:
+    # TODO
+
+  attempt-service:
+    # TODO
