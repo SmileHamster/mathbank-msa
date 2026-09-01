@@ -14,3 +14,15 @@ mybatis:
   type-aliases-package: com.mathbank.auth.domain
   configuration:
     map-underscore-to-camel-case: true
+
+jwt:
+  secret: ${JWT_SECRET:mathbank-secret-key-must-be-32-chars-minimum}
+  expiration: 86400000
+
+app:
+  admin:
+    init-password: ${ADMIN_INIT_PASSWORD:admin1234}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
