@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -18,10 +19,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
+    // 정적 경로뿐 아니라 {id} 같은 경로 변수가 섞인 패턴도 화이트리스트에 넣어야 해서
+    // 단순 List.contains 대신 AntPathMatcher로 매칭한다.
     private static final List<String> WHITE_LIST = List.of(
             "/api/auth/login",
-            "/api/auth/logout"
+            "/api/auth/logout",
+            "/api/problems/images/**",
+            "/api/examsheets/*/pdf",
+            "/api/examsheets/*/pdf/answer"
     );
+
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private final JwtUtil jwtUtil;
 
@@ -29,7 +37,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
 
-        if (WHITE_LIST.contains(path)) {
+        if (WHITE_LIST.stream().anyMatch(pattern -> PATH_MATCHER.match(pattern, path))) {
             return chain.filter(exchange);
         }
 

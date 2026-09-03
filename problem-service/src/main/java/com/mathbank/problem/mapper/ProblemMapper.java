@@ -15,8 +15,10 @@ public interface ProblemMapper {
     int countSearch(ProblemSearchDto searchDto);
     Problem findById(Long id);
     ProblemDetailDto findDetailById(Long id);
+    List<ProblemDetailDto> findDetailByIds(@Param("ids") List<Long> ids);
     void insert(Problem problem);
     void update(Problem problem);
+    void updateImagePath(@Param("id") Long id, @Param("imagePath") String imagePath);
     void deleteById(Long id);
     void insertTags(@Param("problemId") Long problemId, @Param("tagIds") List<Long> tagIds);
     void deleteTagsByProblemId(Long problemId);

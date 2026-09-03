@@ -3,6 +3,7 @@ package com.mathbank.problem.service;
 import com.mathbank.problem.common.exception.ResourceNotFoundException;
 import com.mathbank.problem.common.util.PageInfo;
 import com.mathbank.problem.domain.Problem;
+import com.mathbank.problem.dto.ProblemConditionDto;
 import com.mathbank.problem.dto.ProblemDetailDto;
 import com.mathbank.problem.dto.ProblemFormDto;
 import com.mathbank.problem.dto.ProblemListDto;
@@ -12,6 +13,7 @@ import com.mathbank.problem.mapper.TagMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +27,7 @@ public class ProblemService {
 
     private final ProblemMapper problemMapper;
     private final TagMapper tagMapper;
+    private final ImageStorageService imageStorageService;
 
     public Map<String, Object> getProblemList(ProblemSearchDto searchDto) {
         List<ProblemListDto> problems = problemMapper.search(searchDto);
@@ -98,6 +101,44 @@ public class ProblemService {
         if (problem == null) {
             throw new ResourceNotFoundException("문제를 찾을 수 없습니다: " + id);
         }
+        imageStorageService.delete(problem.getImagePath());
         problemMapper.deleteById(id);
+    }
+
+    @Transactional
+    public String uploadImage(Long id, MultipartFile image) {
+        Problem problem = problemMapper.findById(id);
+        if (problem == null) {
+            throw new ResourceNotFoundException("문제를 찾을 수 없습니다: " + id);
+        }
+        if (problem.getImagePath() != null) {
+            imageStorageService.delete(problem.getImagePath());
+        }
+        String imagePath = imageStorageService.store(image, id);
+        problemMapper.updateImagePath(id, imagePath);
+        return imagePath;
+    }
+
+    @Transactional
+    public void deleteImage(Long id) {
+        Problem problem = problemMapper.findById(id);
+        if (problem == null) {
+            throw new ResourceNotFoundException("문제를 찾을 수 없습니다: " + id);
+        }
+        imageStorageService.delete(problem.getImagePath());
+        problemMapper.updateImagePath(id, null);
+    }
+
+    public List<Long> searchByCondition(ProblemConditionDto condition) {
+        return problemMapper.findIdsByCondition(
+                condition.getGradeTagId(),
+                condition.getSemesterTagId(),
+                condition.getUnitTagIds(),
+                condition.getDifficultyTagId());
+    }
+
+    public List<ProblemDetailDto> findByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return problemMapper.findDetailByIds(ids);
     }
 }

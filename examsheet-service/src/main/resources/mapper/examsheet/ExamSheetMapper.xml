@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mathbank.examsheet.mapper.ExamSheetMapper">
+
+    <!--
+        problem-service, auth-service와 스키마가 분리되어 있어 problem/tag/member 테이블을
+        JOIN할 수 없다. exam_sheet(_problem) 자체 컬럼만 조회하고, 문제 상세/태그/학년명은
+        서비스 레이어에서 ProblemClient(OpenFeign)로 채운다.
+    -->
+
+    <insert id="insertExamSheet" parameterType="com.mathbank.examsheet.domain.ExamSheet"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO exam_sheet (name, grade_tag_id, total_count, created_by)
+        VALUES (#{name}, #{gradeTagId}, #{totalCount}, #{createdBy})
+    </insert>
+
+    <insert id="insertExamSheetProblems">
+        INSERT INTO exam_sheet_problem (exam_sheet_id, problem_id, sort_order) VALUES
+        <foreach collection="problems" item="esp" separator=",">
+            (#{examSheetId}, #{esp.problemId}, #{esp.sortOrder})
+        </foreach>
+    </insert>
+
+    <select id="findAll" resultType="com.mathbank.examsheet.dto.ExamSheetListDto">
+        SELECT id, name, grade_tag_id AS gradeTagId, total_count AS totalCount, created_at AS createdAt
+        FROM exam_sheet
+        WHERE created_by = #{createdBy}
+        ORDER BY created_at DESC, id DESC
+    </select>
+
+    <select id="findById" parameterType="Long" resultType="com.mathbank.examsheet.domain.ExamSheet">
+        SELECT id, name, grade_tag_id AS gradeTagId, total_count AS totalCount, created_by AS createdBy, created_at AS createdAt
+        FROM exam_sheet
+        WHERE id = #{id}
+    </select>
+
+    <select id="findProblemsByExamSheetId" parameterType="Long" resultType="com.mathbank.examsheet.domain.ExamSheetProblem">
+        SELECT exam_sheet_id AS examSheetId, problem_id AS problemId, sort_order AS sortOrder
+        FROM exam_sheet_problem
+        WHERE exam_sheet_id = #{examSheetId}
+        ORDER BY sort_order ASC
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM exam_sheet WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteProblemsById">
+        DELETE FROM exam_sheet_problem WHERE exam_sheet_id = #{examSheetId}
+    </delete>
+
+</mapper>
