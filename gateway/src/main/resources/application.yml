@@ -25,6 +25,10 @@ spring:
               uri: ${ATTEMPT_SERVICE_URI:http://attempt-service:8084}
               predicates:
                 - Path=/api/attempts/**
+            - id: attempt-service-students
+              uri: ${ATTEMPT_SERVICE_URI:http://attempt-service:8084}
+              predicates:
+                - Path=/api/students/**
 
 jwt:
   secret: ${JWT_SECRET:mathbank-secret-key-must-be-32-chars-minimum}

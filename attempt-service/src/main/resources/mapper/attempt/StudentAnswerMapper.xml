@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mathbank.attempt.mapper.StudentAnswerMapper">
+
+    <!--
+        problem-service, examsheet-service와 스키마가 분리되어 있어 problem/exam_sheet/tag를
+        JOIN할 수 없다. student_answer 자체 컬럼만 집계하고, 시험지 이름/문제 태그(단원·난이도)는
+        서비스 레이어에서 Feign(ProblemClient, ExamSheetClient)으로 채운다.
+    -->
+
+    <insert id="insertAnswers">
+        INSERT INTO student_answer (student_id, exam_sheet_id, problem_id, is_correct) VALUES
+        <foreach collection="answers" item="a" separator=",">
+            (#{a.studentId}, #{a.examSheetId}, #{a.problemId}, #{a.isCorrect})
+        </foreach>
+    </insert>
+
+    <delete id="deleteAnswers">
+        DELETE FROM student_answer
+        WHERE student_id = #{studentId} AND exam_sheet_id = #{examSheetId}
+    </delete>
+
+    <select id="findAllByStudent" resultType="com.mathbank.attempt.domain.StudentAnswer">
+        SELECT id, student_id, exam_sheet_id, problem_id, is_correct
+        FROM student_answer
+        WHERE student_id = #{studentId}
+        ORDER BY exam_sheet_id, id
+    </select>
+
+    <select id="findSummaryByStudent" resultType="com.mathbank.attempt.dto.stats.ExamResultDto">
+        SELECT exam_sheet_id AS examSheetId,
+               COUNT(*)      AS totalCount,
+               SUM(is_correct) AS correctCount
+        FROM student_answer
+        WHERE student_id = #{studentId}
+        GROUP BY exam_sheet_id
+        ORDER BY exam_sheet_id DESC
+    </select>
+
+    <select id="findSummaryByStudentAndExamSheet" resultType="com.mathbank.attempt.dto.stats.ExamResultDto">
+        SELECT exam_sheet_id AS examSheetId,
+               COUNT(*)      AS totalCount,
+               SUM(is_correct) AS correctCount
+        FROM student_answer
+        WHERE student_id = #{studentId} AND exam_sheet_id = #{examSheetId}
+        GROUP BY exam_sheet_id
+    </select>
+
+</mapper>

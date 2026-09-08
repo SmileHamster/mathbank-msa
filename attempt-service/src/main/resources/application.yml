@@ -14,3 +14,11 @@ mybatis:
   type-aliases-package: com.mathbank.attempt.domain
   configuration:
     map-underscore-to-camel-case: true
+
+problem:
+  service:
+    url: ${PROBLEM_SERVICE_URL:http://localhost:8082}
+
+examsheet:
+  service:
+    url: ${EXAMSHEET_SERVICE_URL:http://localhost:8083}
