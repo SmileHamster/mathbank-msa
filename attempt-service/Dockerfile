@@ -12,4 +12,4 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8084
-ENTRYPOINT ["java", "-Xms128m", "-Xmx256m", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xms64m", "-Xmx140m", "-XX:+UseSerialGC", "-XX:MaxMetaspaceSize=100m", "-Xss228k", "-XX:ReservedCodeCacheSize=48m", "-XX:CICompilerCount=2", "-jar", "app.jar"]

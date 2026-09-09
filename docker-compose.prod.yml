@@ -1,0 +1,103 @@
+services:
+
+  gateway:
+    build: ./gateway
+    container_name: mathbank-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      AUTH_SERVICE_URI: http://auth-service:8081
+      PROBLEM_SERVICE_URI: http://problem-service:8082
+      EXAMSHEET_SERVICE_URI: http://examsheet-service:8083
+      ATTEMPT_SERVICE_URI: http://attempt-service:8084
+    networks:
+      - mathbank-network
+    depends_on:
+      - auth-service
+      - problem-service
+      - examsheet-service
+      - attempt-service
+
+  auth-service:
+    build: ./auth-service
+    container_name: mathbank-auth
+    restart: always
+    environment:
+      DB_URL: jdbc:mariadb://host.docker.internal:3306/mathbank_auth
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_INIT_PASSWORD: ${ADMIN_INIT_PASSWORD}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - mathbank-network
+
+  problem-service:
+    build: ./problem-service
+    container_name: mathbank-problem
+    restart: always
+    environment:
+      DB_URL: jdbc:mariadb://host.docker.internal:3306/mathbank_problem
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - problem-uploads:/app/uploads
+    networks:
+      - mathbank-network
+
+  examsheet-service:
+    build: ./examsheet-service
+    container_name: mathbank-examsheet
+    restart: always
+    environment:
+      DB_URL: jdbc:mariadb://host.docker.internal:3306/mathbank_exam
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      PROBLEM_SERVICE_URL: http://problem-service:8082
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - mathbank-network
+    depends_on:
+      - problem-service
+
+  attempt-service:
+    build: ./attempt-service
+    container_name: mathbank-attempt
+    restart: always
+    environment:
+      DB_URL: jdbc:mariadb://host.docker.internal:3306/mathbank_attempt
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      PROBLEM_SERVICE_URL: http://problem-service:8082
+      EXAMSHEET_SERVICE_URL: http://examsheet-service:8083
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - mathbank-network
+    depends_on:
+      - problem-service
+      - examsheet-service
+
+  frontend:
+    build: ./frontend
+    container_name: mathbank-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    networks:
+      - mathbank-network
+    depends_on:
+      - gateway
+
+networks:
+  mathbank-network:
+    driver: bridge
+
+volumes:
+  problem-uploads:

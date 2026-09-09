@@ -1,0 +1,29 @@
+name: Deploy to GCP
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: GCP에 배포
+        env:
+          GCP_SSH_KEY: ${{ secrets.GCP_SSH_KEY }}
+          GCP_IP: ${{ secrets.GCP_IP }}
+          GCP_USER: ${{ secrets.GCP_USER }}
+        run: |
+          echo "$GCP_SSH_KEY" > key.pem
+          chmod 600 key.pem
+          rsync -avz -e "ssh -i key.pem -o StrictHostKeyChecking=no" \
+            --exclude 'node_modules' --exclude 'target' \
+            --exclude '.git' --exclude '.env*' \
+            ./ ${GCP_USER}@${GCP_IP}:~/mathbank-msa/
+          ssh -i key.pem -o StrictHostKeyChecking=no ${GCP_USER}@${GCP_IP} "
+            cd ~/mathbank-msa
+            docker compose -f docker-compose.prod.yml \
+              --env-file .env.prod up --build -d
+          "
