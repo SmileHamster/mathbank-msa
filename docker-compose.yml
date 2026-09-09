@@ -92,6 +92,14 @@ services:
       examsheet-service:
         condition: service_started
 
+  frontend:
+    build: ./frontend
+    container_name: mathbank-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - gateway
+
 volumes:
   mariadb-data:
   problem-uploads:
