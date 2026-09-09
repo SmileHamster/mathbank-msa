@@ -1,17 +1,97 @@
-version: '3.8'
-
 services:
+
+  mariadb:
+    image: mariadb:11
+    container_name: mathbank-db
+    environment:
+      MYSQL_ROOT_PASSWORD: mathbank1234
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   gateway:
-    # TODO: Week 1에서 구현
+    build: ./gateway
+    container_name: mathbank-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      JWT_SECRET: mathbank-secret-key-must-be-32-chars-minimum
+      AUTH_SERVICE_URI: http://auth-service:8081
+      PROBLEM_SERVICE_URI: http://problem-service:8082
+      EXAMSHEET_SERVICE_URI: http://examsheet-service:8083
+      ATTEMPT_SERVICE_URI: http://attempt-service:8084
+    depends_on:
+      - auth-service
+      - problem-service
+      - examsheet-service
+      - attempt-service
 
   auth-service:
-    # TODO
+    build: ./auth-service
+    container_name: mathbank-auth
+    environment:
+      DB_URL: jdbc:mariadb://mariadb:3306/mathbank_auth
+      DB_USERNAME: root
+      DB_PASSWORD: mathbank1234
+      JWT_SECRET: mathbank-secret-key-must-be-32-chars-minimum
+      ADMIN_INIT_PASSWORD: admin1234
+    depends_on:
+      mariadb:
+        condition: service_healthy
 
   problem-service:
-    # TODO
+    build: ./problem-service
+    container_name: mathbank-problem
+    environment:
+      DB_URL: jdbc:mariadb://mariadb:3306/mathbank_problem
+      DB_USERNAME: root
+      DB_PASSWORD: mathbank1234
+    volumes:
+      - problem-uploads:/app/uploads
+    depends_on:
+      mariadb:
+        condition: service_healthy
 
   examsheet-service:
-    # TODO
+    build: ./examsheet-service
+    container_name: mathbank-examsheet
+    environment:
+      DB_URL: jdbc:mariadb://mariadb:3306/mathbank_exam
+      DB_USERNAME: root
+      DB_PASSWORD: mathbank1234
+      PROBLEM_SERVICE_URL: http://problem-service:8082
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      problem-service:
+        condition: service_started
 
   attempt-service:
-    # TODO
+    build: ./attempt-service
+    container_name: mathbank-attempt
+    environment:
+      DB_URL: jdbc:mariadb://mariadb:3306/mathbank_attempt
+      DB_USERNAME: root
+      DB_PASSWORD: mathbank1234
+      PROBLEM_SERVICE_URL: http://problem-service:8082
+      EXAMSHEET_SERVICE_URL: http://examsheet-service:8083
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      problem-service:
+        condition: service_started
+      examsheet-service:
+        condition: service_started
+
+volumes:
+  mariadb-data:
+  problem-uploads:
