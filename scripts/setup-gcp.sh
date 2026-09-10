@@ -73,19 +73,29 @@ sudo iptables -t nat -C PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3000 
 # 443으로 들어온 트래픽을 평문 HTTP 포트(8080)로 넘겨봤자 응답하지 못한다.
 # HTTPS가 필요해지면 Let's Encrypt 등으로 실제 TLS 종단부터 구성해야 한다.
 
-echo "=== 8. 스왑 파일 생성 (2GB, 없으면) ==="
+echo "=== 8. 스왑 파일 생성 (총 4GB, 없으면) ==="
 # 로컬 실측 기준 5개 서비스 컨테이너 메모리 합계만 ~800MB (JVM 튜닝 반영 후).
 # 여기에 MariaDB + OS 오버헤드까지 더하면 e2-micro의 1GB를 넘길 수 있다.
 # 스왑이 있으면 순간적인 초과는 느려지더라도 OOM-kill로 죽는 대신 버틴다.
-if ! sudo swapon --show | grep -q '/swapfile'; then
-  sudo fallocate -l 2G /swapfile
-  sudo chmod 600 /swapfile
-  sudo mkswap /swapfile
-  sudo swapon /swapfile
-  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-else
-  echo "스왑이 이미 설정되어 있음 - 스킵"
-fi
+#
+# 2GB로 시작했다가 실전에서 부족함이 확인됨: 5개 서비스가 동시에 떠 있는
+# 상태에서 게이트웨이가 POST 요청 body를 다운스트림으로 포워딩할 때 Netty가
+# 버퍼 할당할 여유 메모리가 없어 응답 없이 무한 대기하는 문제가 있었다
+# (GET처럼 body 없는 요청은 영향 없음). 스왑을 4GB로 늘려 해결.
+# 파일 하나를 4GB로 새로 만들지 않고 2GB짜리를 하나 더 추가하는 이유:
+# 기존 스왑을 swapoff했다가 다시 만들면 그 사이 메모리 부족으로 문제가
+# 생길 수 있어, 기존 것은 그대로 두고 보태는 쪽이 안전하다.
+for f in /swapfile /swapfile2; do
+  if ! sudo swapon --show | grep -q "$f"; then
+    sudo fallocate -l 2G "$f"
+    sudo chmod 600 "$f"
+    sudo mkswap "$f"
+    sudo swapon "$f"
+    grep -q "$f" /etc/fstab || echo "$f none swap sw 0 0" | sudo tee -a /etc/fstab
+  else
+    echo "$f 은(는) 이미 스왑으로 설정되어 있음 - 스킵"
+  fi
+done
 
 echo "=== 완료 ==="
 echo "이제 'newgrp docker' 또는 재접속 후 Docker 사용 가능"
