@@ -18,12 +18,16 @@ jobs:
         run: |
           echo "$GCP_SSH_KEY" > key.pem
           chmod 600 key.pem
-          rsync -avz -e "ssh -i key.pem -o StrictHostKeyChecking=no" \
+          rsync -avz --delete -e "ssh -i key.pem -o StrictHostKeyChecking=no" \
             --exclude 'node_modules' --exclude 'target' \
             --exclude '.git' --exclude '.env*' \
             ./ ${GCP_USER}@${GCP_IP}:~/mathbank-msa/
           ssh -i key.pem -o StrictHostKeyChecking=no ${GCP_USER}@${GCP_IP} "
+            set -e
             cd ~/mathbank-msa
-            docker compose -f docker-compose.prod.yml \
-              --env-file .env.prod up --build -d
+            for svc in auth-service problem-service examsheet-service attempt-service gateway frontend; do
+              echo \"--- building \$svc ---\"
+              docker compose -f docker-compose.prod.yml --env-file .env.prod build \$svc
+            done
+            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
           "
