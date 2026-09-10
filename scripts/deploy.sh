@@ -13,6 +13,8 @@ ARCHIVE="$(mktemp -t mathbank-msa-deploy-XXXXXX.tar.gz)"
 git archive --format=tar HEAD | gzip > "${ARCHIVE}"
 scp -i "${SSH_KEY}" "${ARCHIVE}" ${GCP_USER}@${GCP_IP}:/tmp/mathbank-msa-deploy.tar.gz
 ssh -i "${SSH_KEY}" ${GCP_USER}@${GCP_IP} "
+  set -e
+  rm -rf ~/mathbank-msa
   mkdir -p ~/mathbank-msa
   tar -xzf /tmp/mathbank-msa-deploy.tar.gz -C ~/mathbank-msa
   rm /tmp/mathbank-msa-deploy.tar.gz
@@ -31,6 +33,7 @@ echo "=== GCP에서 빌드 및 실행 ==="
 # (up의 컨테이너 기동 동시성에만 적용됨) 서비스별로 build를 따로 호출해
 # 확실히 한 번에 하나씩만 빌드하도록 강제한다.
 ssh -i ${SSH_KEY} ${GCP_USER}@${GCP_IP} "
+  set -e
   cd ~/mathbank-msa
   for svc in auth-service problem-service examsheet-service attempt-service gateway frontend; do
     echo \"--- building \$svc ---\"
